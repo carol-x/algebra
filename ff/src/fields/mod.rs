@@ -289,6 +289,7 @@ pub trait Field:
         }
         Some(res)
     }
+
 }
 
 /// Fields that have a cyclotomic multiplicative subgroup, and which can
@@ -588,6 +589,12 @@ pub trait PrimeField:
         let mut bytes_copy = bytes.to_vec();
         bytes_copy.reverse();
         Self::from_be_bytes_mod_order(&bytes_copy)
+    }
+
+    /// Performs multiplication and addition
+    fn mul_add_assign(&mut self, other1: &Self, &other2: &Self) {
+        self.mul_assign(other1);
+        self.add_assign(other2);
     }
 }
 
@@ -1063,5 +1070,18 @@ mod no_std_tests {
             let actual = Fr::from_be_bytes_mod_order(&i);
             assert_eq!(expected, actual, "failed on test {:?}", i);
         }
+    }
+
+    #[test]
+    fn test_mul_add() {
+        let rng = &mut test_rng();
+        let a = Fr::rand(rng);
+        let b = Fr::rand(rng);
+        let c = Fr::rand(rng);
+
+        let expected = a * b + c;
+        let mut got = a.clone();
+        got.mul_add_assign(&b, &c);
+        assert_eq!(expected, got);
     }
 }
