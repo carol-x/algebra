@@ -79,6 +79,9 @@ pub trait FpConfig<const N: usize>: Send + Sync + 'static + Sized {
     /// Set a *= b.
     fn mul_assign(a: &mut Fp<Self, N>, b: &Fp<Self, N>);
 
+    // Set a * b + c 
+    fn mul_add_assign(a: &mut Fp<Self, N>, b: &Fp<Self, N>, c: &Fp<Self, N>);
+
     /// Compute the inner product `<a, b>`.
     fn sum_of_products<const T: usize>(a: &[Fp<Self, N>; T], b: &[Fp<Self, N>; T]) -> Fp<Self, N>;
 
@@ -227,6 +230,11 @@ impl<P: FpConfig<N>, const N: usize> Field for Fp<P, N> {
     #[inline]
     fn characteristic() -> &'static [u64] {
         P::MODULUS.as_ref()
+    }
+
+    #[inline]
+    fn mul_add_assign(&mut self, b: &Self, c: &Self) {
+        P::mul_add_assign(self, b, c);
     }
 
     #[inline]

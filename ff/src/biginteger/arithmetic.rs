@@ -31,6 +31,7 @@ pub fn adc_for_add_with_carry(a: &mut u64, b: u64, carry: u8) -> u8 {
     }
     #[cfg(not(all(target_arch = "x86_64", feature = "asm")))]
     {
+        // TODO: should just call adc, but cast the output as u8 
         let tmp = *a as u128 + b as u128 + carry as u128;
         *a = tmp as u64;
         (tmp >> 64) as u8

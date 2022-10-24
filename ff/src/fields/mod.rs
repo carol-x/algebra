@@ -242,6 +242,12 @@ pub trait Field:
     /// `self` to `self.inverse().unwrap()`.
     fn inverse_in_place(&mut self) -> Option<&mut Self>;
 
+    /// assign self a to a * b + c 
+    fn mul_add_assign(&mut self, b: &Self, c: &Self) {
+        self.mul_assign(b); 
+        self.add_assign(c);
+    }
+
     /// Returns `sum([a_i * b_i])`.
     #[inline]
     fn sum_of_products<const T: usize>(a: &[Self; T], b: &[Self; T]) -> Self {
@@ -591,11 +597,6 @@ pub trait PrimeField:
         Self::from_be_bytes_mod_order(&bytes_copy)
     }
 
-    /// Performs multiplication and addition
-    fn mul_add_assign(&mut self, other1: &Self, &other2: &Self) {
-        self.mul_assign(other1);
-        self.add_assign(other2);
-    }
 }
 
 /// Indication of the field element's quadratic residuosity
@@ -1072,16 +1073,4 @@ mod no_std_tests {
         }
     }
 
-    #[test]
-    fn test_mul_add() {
-        let rng = &mut test_rng();
-        let a = Fr::rand(rng);
-        let b = Fr::rand(rng);
-        let c = Fr::rand(rng);
-
-        let expected = a * b + c;
-        let mut got = a.clone();
-        got.mul_add_assign(&b, &c);
-        assert_eq!(expected, got);
-    }
 }

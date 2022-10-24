@@ -192,6 +192,54 @@ pub trait MontConfig<const N: usize>: 'static + Sync + Send + Sized {
         a.subtract_modulus();
     }
 
+    fn mul_add_assign(
+        a: &mut Fp<MontBackend<Self, N>, N>,
+        b: &Fp<MontBackend<Self, N>, N>,
+        c: &Fp<MontBackend<Self, N>, N>)  {
+
+        let modulus_size = Self::MODULUS.const_num_bits() as usize;
+        if modulus_size >= 64 * N - 1 { 
+            Self::mul_assign(a, b); 
+            Self::add_assign(a, c); 
+        } else {
+            let result = (0..N).fold(BigInt::zero(), |mut result, j| {
+                // multiply a & b 
+                let mut carry_a = 0;
+                let mut carry_b = 0;
+                
+                let a = &a.0;
+                let b = &b.0;
+                let mut carry2 = 0;
+                result.0[0] = fa::mac(result.0[0], a.0[j], b.0[0], &mut carry2);
+                for k in 1..N {
+                    result.0[k] = fa::mac_with_carry(result.0[k], a.0[j], b.0[k], &mut carry2);
+                }
+                carry_b = fa::adc(&mut carry_a, carry_b, carry2);
+                
+                // prepare c in the radix 
+                let c = &c.0;
+                let carry2 = 0;
+                result.0[0] = fa::adc(&mut result.0[0], c.0[j], carry2);
+                for k in 1..N {
+                    result.0[k] = fa::adc(&mut result.0[k], c.0[j], carry2); // may change to adc_for_add_with_carry for better performance
+                }
+                carry_b = fa::adc(&mut carry_a, carry_b, carry2);
+
+                let k = result.0[0].wrapping_mul(Self::INV);
+                let mut carry2 = 0;
+                fa::mac_discard(result.0[0], k, Self::MODULUS.0[0], &mut carry2);
+                for i in 1..N {
+                    result.0[i - 1] =
+                        fa::mac_with_carry(result.0[i], k, Self::MODULUS.0[i], &mut carry2);
+                }
+                result.0[N - 1] = fa::adc_no_carry(carry_a, carry_b, &mut carry2);
+                result
+            });
+            *a = Fp::new_unchecked(result);
+            a.subtract_modulus();
+        } 
+    }
+
     #[inline(always)]
     #[unroll_for_loops(12)]
     fn square_in_place(a: &mut Fp<MontBackend<Self, N>, N>) {
@@ -618,6 +666,10 @@ impl<T: MontConfig<N>, const N: usize> FpConfig<N> for MontBackend<T, N> {
         T::mul_assign(a, b)
     }
 
+    fn mul_add_assign(a: &mut Fp<Self, N>, b: &Fp<Self, N>, c: &Fp<Self, N>) {
+        T::mul_add_assign(a, b, c)
+    }
+
     fn sum_of_products<const M: usize>(a: &[Fp<Self, N>; M], b: &[Fp<Self, N>; M]) -> Fp<Self, N> {
         T::sum_of_products(a, b)
     }
@@ -770,5 +822,25 @@ impl<T: MontConfig<N>, const N: usize> Fp<MontBackend<T, N>, N> {
 
     const fn sub_with_borrow(a: &BigInt<N>, b: &BigInt<N>) -> BigInt<N> {
         a.const_sub_with_borrow(b).0
+    }
+}
+
+#[cfg(test)]
+mod no_std_tests { 
+    use ark_std::test_rng;
+    use ark_test_curves::*;
+    use crate::{MontConfig, MontBackend}; 
+
+    #[test]
+    fn test_mul_add() {
+        let rng = &mut test_rng();
+        let a = bls12_381::Fr::rand(rng);
+        let b = bls12_381::Fr::rand(rng);
+        let c = bls12_381::Fr::rand(rng);
+
+        let expected = a * b + c;
+        let mut got = a.clone();
+        MontConfig::mul_add_assign(&mut got, &b, &c);
+        assert_eq!(expected, got);
     }
 }
