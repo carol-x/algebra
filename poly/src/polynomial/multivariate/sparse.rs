@@ -176,6 +176,24 @@ impl<F: Field, T: Term> Add for SparsePolynomial<F, T> {
 impl<'a, 'b, F: Field, T: Term> Add<&'a SparsePolynomial<F, T>> for &'b SparsePolynomial<F, T> {
     type Output = SparsePolynomial<F, T>;
 
+    /// Adds two sparse polynomials
+    ///
+    /// # Examples
+    /// ```
+    /// use ark_poly::{
+    ///     polynomial::multivariate::{SparsePolynomial, SparseTerm},
+    ///     DenseMVPolynomial, Polynomial,
+    /// };
+    /// use ark_std::test_rng;
+    /// use ark_test_curves::bls12_381::Fq;
+    ///
+    /// let rng = &mut test_rng();
+    /// // Create a multivariate polynomial of degree 7
+    /// let poly1: SparsePolynomial<Fq, SparseTerm> = SparsePolynomial::rand(7, 2, rng);
+    /// let poly2: SparsePolynomial<Fq, SparseTerm> = SparsePolynomial::rand(7, 2, rng); 
+    /// let poly: SparsePolynomial<Fq, SparseTerm> = poly1.add(poly2); 
+    /// assert_eq!(poly.degree(), 7);
+    /// ```
     fn add(self, other: &'a SparsePolynomial<F, T>) -> SparsePolynomial<F, T> {
         let mut result = Vec::new();
         let mut cur_iter = self.terms.iter().peekable();

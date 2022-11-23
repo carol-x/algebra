@@ -136,12 +136,17 @@ pub fn mont_config_helper(
                     #mul_assign
                 }
 
-                fn sum_of_products<const M: usize>(
-                    a: &[F; M],
-                    b: &[F; M],
-                ) -> F {
-                    #sum_of_products
-                }
+                // #[inline(always)]
+                // fn mul_add_assign(a: &mut F, b: &F, c: &F) {
+                //     #mul_add_assign
+                // }
+
+                // fn sum_of_products<const M: usize>(
+                //     a: &[F; M],
+                //     b: &[F; M],
+                // ) -> F {
+                //     #sum_of_products
+                // }
             }
 
             #subtract_modulus

@@ -20,7 +20,6 @@ pub(super) fn sum_of_products_impl(num_limbs: usize, modulus: &[u64]) -> proc_ma
     //   single bitshift by the limb size after each iteration. This means we only
     //   need to store a single extra limb overall, instead of keeping around all the
     //   intermediate results and eventually having twice as many limbs.
-
     if modulus_size >= 64 * num_limbs - 1 {
         quote! {
             a.iter().zip(b).map(|(a, b)| *a * b).sum()
